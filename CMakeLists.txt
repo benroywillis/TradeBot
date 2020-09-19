@@ -76,9 +76,10 @@ foreach (SOURCE_FILE ${ALL_SOURCE_FILES})
     endforeach()
 endforeach ()
 
+find_program(FORMAT NAMES clang-format-10 clang-format)
 add_custom_target(
     format
-    COMMAND /usr/bin/clang-format-10
+    COMMAND ${FORMAT}
     -style=file
     -i
     ${ALL_SOURCE_FILES}
