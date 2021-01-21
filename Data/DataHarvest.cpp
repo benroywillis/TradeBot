@@ -2,13 +2,9 @@
  * subject to the terms and conditions of the IB API Non-Commercial License or
  * the IB API Commercial License, as applicable. */
 
-#include "StdAfx.h"
-
-#include "Account.h"
-#include "Broker.h"
 #include "ClientBrain.h"
 #include "ClientData.h"
-#include "HalvedPositionSMA.h"
+#include "twsapi/StdAfx.h"
 #include <chrono>
 #include <csignal>
 #include <cstdlib>
@@ -27,33 +23,29 @@ bool inter = false;
 void sigint( int sigint ) { inter = true; }
 
 array<string, 120> StateArray = {
-    // TradeManager Contribution
+    // TradeBot Contribution
     "CONNECT",             // attempting a new connection
     "CONNECTSUCCESS",      // used just after a successful connection
     "CONNECTFAIL",         // a connection attempt has just failed
-    "INIT",                // A new connection has just been established and the trading bot
-                           // needs to be initialized
-    "INITSUCCESS",         // Trading bot is fully and successfully initialized and
-                           // ready to trade
-    "INITFAIL",            // Something went wrong in the initialization function; leads to
-                           // immediate disconnect and termination of the program
-    "ACTIVETRADING",       // The trading bot is actively processing data and placing
-                           // trades
-    "PASSIVETRADING",      // The trading bot is actively processing data but not
-                           // placing orders
-    "ACCOUNTID",           // Waiting to get account ID string. Required to initialize
-                           // account
+    "INIT",                // A new connection has just been established and the trading bot needs to be initialized
+    "INITSUCCESS",         // Trading bot is fully and successfully initialized and ready to trade
+    "INITFAIL",            // Something went wrong in the initialization function; leads to immediate disconnect and termination of the program
+    "ACTIVETRADING",       // The trading bot is actively processing data and placing trades
+    "PASSIVETRADING",      // The trading bot is actively processing data but not placing orders
+    "ACCOUNTID",           // Waiting to get account ID string. Required to initialize account
     "ACCOUNTIDSUCCESS",    // Successfully received account ID string from TWS
     "ACCOUNTINIT",         // ClientAccount is being initialized by TWS
-    "ACCOUNTINITSUCCESS",  // ClientAccount has just been fully and successfully
-                           // initialized
+    "ACCOUNTINITSUCCESS",  // ClientAccount has just been fully and successfully initialized
     "ACCOUNTCLOSE",        // ClientAccount is closing its subscriptions
-    "ACCOUNTCLOSESUCCESS", // ClientAccount has successfully closed its account
-                           // subscriptions
-    "ACCOUNTCLOSEFAIL",    // An error occurred when trying to close account
-                           // subscriptions
-    "DATAINIT", "DATAINITSUCCESS", "DATAHARVEST", "DATAHARVEST_TIMEOUT_0",
-    "DATAHARVEST_TIMEOUT_1", "DATAHARVEST_TIMEOUT_2", "DATAHARVEST_DONE",
+    "ACCOUNTCLOSESUCCESS", // ClientAccount has successfully closed its account subscriptions
+    "ACCOUNTCLOSEFAIL",    // An error occurred when trying to close account subscriptions
+    "DATAINIT",
+    "DATAINITSUCCESS",
+    "DATAHARVEST",
+    "DATAHARVEST_TIMEOUT_0",
+    "DATAHARVEST_TIMEOUT_1",
+    "DATAHARVEST_TIMEOUT_2",
+    "DATAHARVEST_DONE",
     // IB API
     "TICKDATAOPERATION", "TICKDATAOPERATION_ACK",
     "TICKOPTIONCOMPUTATIONOPERATION", "TICKOPTIONCOMPUTATIONOPERATION_ACK",
@@ -81,7 +73,7 @@ array<string, 120> StateArray = {
     "CONTFUT_ACK", "PING", "PING_ACK", "REQHISTORICALTICKS",
     "REQHISTORICALTICKS_ACK", "REQTICKBYTICKDATA", "REQTICKBYTICKDATA_ACK",
     "WHATIFSAMPLES", "WHATIFSAMPLES_ACK", "IDLE",
-    // TradeManager contribution
+    // TradeBot contribution
     "INT" };
 
 namespace ClientSpace
@@ -111,8 +103,7 @@ void ClientBrain::processMessages()
         case CONNECT:
             // something is wrong, should never be in this state when processing
             // messages
-            spdlog::critical(
-                "Client is in Connect state when processing messages. Exiting..." );
+            spdlog::critical( "Client is in Connect state when processing messages. Exiting..." );
             disconnect();
             exit( CONNECT );
 
@@ -144,9 +135,7 @@ void ClientBrain::processMessages()
                 }
                 else
                 {
-                    spdlog::info(
-                        "Waiting for open requests to call back. Current size is " +
-                        to_string( Data->openHistRequests.size() ) );
+                    spdlog::info( "Waiting for open requests to call back. Current size is " + to_string( Data->openHistRequests.size() ) );
                 }
             }
             break;
@@ -161,9 +150,7 @@ void ClientBrain::processMessages()
                 }
                 else
                 {
-                    spdlog::info(
-                        "Waiting for open requests to call back. Current size is " +
-                        to_string( Data->openHistRequests.size() ) );
+                    spdlog::info( "Waiting for open requests to call back. Current size is " + to_string( Data->openHistRequests.size() ) );
                 }
             }
             break;
@@ -178,16 +165,13 @@ void ClientBrain::processMessages()
                 }
                 else
                 {
-                    spdlog::info(
-                        "Waiting for open requests to call back. Current size is " +
-                        to_string( Data->openHistRequests.size() ) );
+                    spdlog::info( "Waiting for open requests to call back. Current size is " + to_string( Data->openHistRequests.size() ) );
                 }
             }
             break;
 
         case DATAHARVEST_DONE:
-            spdlog::info( "Data harvesting has completed. Live requests will remain "
-                          "active until an interrupt is received." );
+            spdlog::info( "Data harvesting has completed. Live requests will remain active until an interrupt is received." );
             if( Data->openHistRequests.empty() )
             {
                 Data->printCSVs();
@@ -216,8 +200,7 @@ void ClientBrain::processMessages()
 
         case ACCOUNTCLOSEFAIL:
             // An error occurred when trying to close account subscriptions
-            spdlog::error(
-                "An error occurred when trying to close account subscriptions" );
+            spdlog::error( "An error occurred when trying to close account subscriptions" );
             disconnect();
             exit( ACCOUNTCLOSEFAIL );
 

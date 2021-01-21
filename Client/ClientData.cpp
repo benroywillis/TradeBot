@@ -35,8 +35,7 @@ ClientData::ClientData( vector<BTIndicator*>& newIndicators )
     valid = false;
 }
 
-ClientData::ClientData( const shared_ptr<EClientSocket>& newClient,
-                        const shared_ptr<State>&         newState )
+ClientData::ClientData( const shared_ptr<EClientSocket>& newClient, const shared_ptr<State>& newState )
 {
     indicators = vector<BTIndicator*>();
     p_Client = newClient;
@@ -97,9 +96,7 @@ void ClientData::harvest( int index )
             this_thread::sleep_for( chrono::milliseconds( 200 ) );
             newHistRequest( con, getNextVectorId(), "28800 S", "30 secs", "TRADES" );
             this_thread::sleep_for( chrono::milliseconds( 200 ) );
-            newHistRequest( con, getNextVectorId(), "1 D", "1 min",
-                            "TRADES" ); // the length of all candles north of 30s have
-                                        // no length restriction anymore
+            newHistRequest( con, getNextVectorId(), "1 D", "1 min", "TRADES" ); // the length of all candles north of 30s have no length restrictions anymore
             this_thread::sleep_for( chrono::milliseconds( 200 ) );
         }
         *p_State = DATAHARVEST_TIMEOUT_0;
@@ -187,33 +184,28 @@ void ClientData::newLiveRequest( Contract& con, long vecId )
     p_Client->reqMktData( vecId, con, "", false, false, TagValueListSPtr() );
 }
 
-void ClientData::newHistRequest( Contract& con, long vecId, const string& length,
-                                 const string& barlength, const string& type )
+void ClientData::newHistRequest( Contract& con, long vecId, const string& length, const string& barlength, const string& type )
 {
-    auto   newVec = make_shared<DataArray>( vecId, con.conId, con.symbol, con.secId,
-                                          con.secType, con.exchange, con.currency );
+    auto   newVec = make_shared<DataArray>( vecId, con.conId, con.symbol, con.secId, con.secType, con.exchange, con.currency );
     string inter = barlength;
-    inter.erase( remove_if( inter.begin(), inter.end(),
-                            []( unsigned char c ) { return std::isspace( c ); } ),
-                 inter.end() );
+    inter.erase( remove_if( inter.begin(), inter.end(), []( unsigned char c ) { return std::isspace( c ); } ), inter.end() );
     newVec->interval = inter;
     DataArrays.insert( newVec );
     openHistRequests.insert( vecId );
-    p_Client->reqHistoricalData( vecId, con, "", length, barlength, type, 1, 1,
-                                 false, TagValueListSPtr() );
+    p_Client->reqHistoricalData( vecId, con, "", length, barlength, type, 1, 1, false, TagValueListSPtr() );
 }
 
-void ClientData::startTimer() { start = chrono::high_resolution_clock::now(); }
+void ClientData::startTimer()
+{
+    start = chrono::high_resolution_clock::now();
+}
 
 bool ClientData::checkTimer()
 {
     auto nowTime = chrono::_V2::system_clock::now();
     auto intDuration = chrono::duration_cast<chrono::seconds>( nowTime - start );
-    spdlog::info( "Seconds until next data harvest: " +
-                  to_string( TIMEOUT - intDuration.count() ) );
-    return chrono::duration_cast<chrono::seconds>(
-               chrono::_V2::system_clock::now() - start )
-               .count() > TIMEOUT;
+    spdlog::info( "Seconds until next data harvest: " + to_string( TIMEOUT - intDuration.count() ) );
+    return chrono::duration_cast<chrono::seconds>( chrono::_V2::system_clock::now() - start ).count() > TIMEOUT;
 }
 
 void ClientData::updateCandle( TickerId reqId, const Bar& bar )
@@ -236,8 +228,7 @@ void ClientData::updateCandle( TickerId reqId, const Bar& bar )
     }
 }
 
-void ClientData::updatePrice( TickerId reqId, SnapStruct& newPoint, double price,
-                              int field )
+void ClientData::updatePrice( TickerId reqId, SnapStruct& newPoint, double price, int field )
 {
     if( field == 1 )
     {
@@ -269,8 +260,7 @@ void ClientData::updatePrice( TickerId reqId, SnapStruct& newPoint, double price
     }
 }
 
-void ClientData::updatePrice( TickerId reqId, OptionStruct& newPoint,
-                              double price, int field )
+void ClientData::updatePrice( TickerId reqId, OptionStruct& newPoint, double price, int field )
 {
     if( field == 1 )
     {
@@ -302,8 +292,7 @@ void ClientData::updatePrice( TickerId reqId, OptionStruct& newPoint,
     }
 }
 
-void ClientData::updateSize( TickerId reqId, SnapStruct& newPoint, int value,
-                             int field )
+void ClientData::updateSize( TickerId reqId, SnapStruct& newPoint, int value, int field )
 {
     if( field == 0 )
     {
@@ -325,8 +314,7 @@ void ClientData::updateSize( TickerId reqId, SnapStruct& newPoint, int value,
     }
 }
 
-void ClientData::updateSize( TickerId reqId, OptionStruct& newPoint, int value,
-                             int field )
+void ClientData::updateSize( TickerId reqId, OptionStruct& newPoint, int value, int field )
 {
     if( field == 0 )
     {
@@ -358,11 +346,7 @@ void ClientData::updateSize( TickerId reqId, OptionStruct& newPoint, int value,
     }
 }
 
-void ClientData::updateOptionGreeks( TickerId reqId, OptionStruct& newPoint,
-                                     double impliedVol, double delta,
-                                     double optPrice, double pvDividend,
-                                     double gamma, double vega, double theta,
-                                     int field )
+void ClientData::updateOptionGreeks( TickerId reqId, OptionStruct& newPoint, double impliedVol, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, int field )
 {
     // sometimes (especially at the beginning) the data can be crap, so make sure
     // the values are sane
@@ -644,4 +628,7 @@ bool ClientData::updated()
     return false;
 }
 
-bool ClientData::updated() const { return openDataLines == updatedLines; }
+bool ClientData::updated() const
+{
+    return openDataLines == updatedLines;
+}

@@ -2,33 +2,30 @@
  * subject to the terms and conditions of the IB API Non-Commercial License or
  * the IB API Commercial License, as applicable. */
 
-#include "StdAfx.h"
-
-#include "Client.h"
-
-#include "EClientSocket.h"
-#include "EPosixClientSocketPlatform.h"
-
-#include "AccountSummaryTags.h"
-#include "AvailableAlgoParams.h"
-#include "CommissionReport.h"
-#include "CommonDefs.h"
-#include "Contract.h"
-#include "ContractSamples.h"
-#include "Execution.h"
-#include "FAMethodSamples.h"
-#include "MarginCondition.h"
-#include "Order.h"
-#include "OrderSamples.h"
-#include "OrderState.h"
-#include "PercentChangeCondition.h"
-#include "PriceCondition.h"
-#include "ScannerSubscription.h"
-#include "ScannerSubscriptionSamples.h"
-#include "TimeCondition.h"
-#include "Utils.h"
-#include "VolumeCondition.h"
-#include "executioncondition.h"
+#include "twsapi/Client.h"
+#include "twsapi/AccountSummaryTags.h"
+#include "twsapi/AvailableAlgoParams.h"
+#include "twsapi/CommissionReport.h"
+#include "twsapi/CommonDefs.h"
+#include "twsapi/Contract.h"
+#include "twsapi/ContractSamples.h"
+#include "twsapi/EClientSocket.h"
+#include "twsapi/EPosixClientSocketPlatform.h"
+#include "twsapi/Execution.h"
+#include "twsapi/FAMethodSamples.h"
+#include "twsapi/MarginCondition.h"
+#include "twsapi/Order.h"
+#include "twsapi/OrderSamples.h"
+#include "twsapi/OrderState.h"
+#include "twsapi/PercentChangeCondition.h"
+#include "twsapi/PriceCondition.h"
+#include "twsapi/ScannerSubscription.h"
+#include "twsapi/ScannerSubscriptionSamples.h"
+#include "twsapi/StdAfx.h"
+#include "twsapi/TimeCondition.h"
+#include "twsapi/Utils.h"
+#include "twsapi/VolumeCondition.h"
+#include "twsapi/executioncondition.h"
 
 #include <chrono>
 #include <cstdint>
@@ -48,53 +45,45 @@ namespace ClientSpace
     constexpr int SLEEP_BETWEEN_PINGS = 30; // seconds
 
     /** Organization
- * Constructor/Destructor
- * Housekeeping
- * Main Thread
- * Strategy
- * Account
- * Data
- * Broker
- * What are these?
- */
+     * Constructor/Destructor
+     * Housekeeping
+     * Main Thread
+     * Strategy
+     * Account
+     * Data
+     * Broker
+     * What are these?
+     */
 
     /** Constructor/Destructor
- *
- */
-    Client::Client()
-        : m_osSignal( 2000 ), p_Client( make_shared<EClientSocket>( this, &m_osSignal ) ),
-          p_State( make_shared<State>( CONNECT ) ), m_sleepDeadline( 0 ),
-          p_OrderId( make_shared<OrderId>( 0 ) ), p_Reader( nullptr ),
-          p_ExtraAuth( make_shared<bool>( false ) ) {}
-
+     *
+     */
+    Client::Client() : m_osSignal( 2000 ), p_Client( make_shared<EClientSocket>( this, &m_osSignal ) ), p_State( make_shared<State>( CONNECT ) ), m_sleepDeadline( 0 ), p_OrderId( make_shared<OrderId>( 0 ) ), p_Reader( nullptr ), p_ExtraAuth( make_shared<bool>( false ) ) {}
     Client::~Client() = default;
 
     /** Functions useful for Brain
- * Connection methods
- * State control
- * Time updates
- * Server logging level
- * Server error callback
- * Windows error
- * Accounts under control
- */
+     * Connection methods
+     * State control
+     * Time updates
+     * Server logging level
+     * Server error callback
+     * Windows error
+     * Accounts under control
+     */
     bool Client::connect( const char* host, int port, int clientId )
     {
         string hostName = !( ( host != nullptr ) && ( *host ) != 0 ) ? "127.0.0.1" : host;
-        cout << "Connecting to " << hostName << ": " << port
-             << " clientID: " << clientId << endl;
+        cout << "Connecting to " << hostName << ": " << port << " clientID: " << clientId << endl;
         bool bRes = p_Client->eConnect( host, port, clientId, *p_ExtraAuth );
         if( bRes )
         {
-            cout << "Connected to " << p_Client->host().c_str() << ": "
-                 << p_Client->port() << " clientID: " << clientId << endl;
+            cout << "Connected to " << p_Client->host().c_str() << ": " << p_Client->port() << " clientID: " << clientId << endl;
             p_Reader = make_shared<EReader>( p_Client.get(), &m_osSignal );
             p_Reader->start();
         }
         else
         {
-            cout << "Cannot connect to " << p_Client->host().c_str() << ": "
-                 << p_Client->port() << " clientID: " << clientId << endl;
+            cout << "Cannot connect to " << p_Client->host().c_str() << ": " << p_Client->port() << " clientID: " << clientId << endl;
         }
         return bRes;
     }

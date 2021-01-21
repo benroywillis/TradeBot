@@ -1,8 +1,6 @@
 #pragma once
 #include "Client.h"
-#include "Data.h"
-#include "DataStruct.h"
-#include "DataTypes.h"
+#include "TradeBase/Data.h"
 
 class DataArray;
 
@@ -24,8 +22,7 @@ class ClientData : public ClientSpace::Client, public BTData
 
 public:
     ClientData( std::vector<BTIndicator*>& );
-    ClientData( const std::shared_ptr<EClientSocket>&,
-                const std::shared_ptr<ClientSpace::State>& );
+    ClientData( const std::shared_ptr<EClientSocket>&, const std::shared_ptr<ClientSpace::State>& );
     ClientData();
     void addClient( std::shared_ptr<EClientSocket> );
     void addState( std::shared_ptr<ClientSpace::State> );
@@ -38,16 +35,14 @@ public:
     void updateSize( TickerId, SnapStruct&, int, int );
     void updatePrice( TickerId, OptionStruct&, double, int );
     void updateSize( TickerId, OptionStruct&, int, int );
-    void updateOptionGreeks( TickerId, OptionStruct&, double, double, double,
-                             double, double, double, double, int );
+    void updateOptionGreeks( TickerId, OptionStruct&, double, double, double, double, double, double, double, int );
     bool updated();
     bool updated() const;
 
 private:
     void initContractVectors();
     void startLiveData();
-    void newHistRequest( Contract&, long, const std::string&,
-                         const std::string&, const std::string& );
+    void newHistRequest( Contract&, long, const std::string&, const std::string&, const std::string& );
     void newLiveRequest( Contract&, long );
     void addPoint( long, SnapStruct );
     void addPoint( long, OptionStruct );
