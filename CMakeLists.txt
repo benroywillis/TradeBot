@@ -21,7 +21,7 @@ if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     message(STATUS "Setting libCXX debug flag")
 endif()
 
-set(Client_Inc "${CMAKE_CURRENT_SOURCE_DIR}/Client/inc/")
+set(CLIENT_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/Client/inc/")
 
 find_package(spdlog CONFIG REQUIRED)
 find_package(twsapi CONFIG REQUIRED)

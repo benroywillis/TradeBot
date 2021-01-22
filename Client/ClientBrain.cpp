@@ -1,15 +1,13 @@
 #include "ClientBrain.h"
-#include "AccountSummaryTags.h"
-#include "ClientAccount.h"
-#include "ClientBroker.h"
 #include "ClientData.h"
-#include "Contract.h"
-#include "ContractSamples.h"
-#include "EClientSocket.h"
-#include "Execution.h"
-#include "Order.h"
-#include "OrderState.h"
-#include "Strategy.h"
+#include "TradeBase/Strategy.h"
+#include "twsapi/AccountSummaryTags.h"
+#include "twsapi/Contract.h"
+#include "twsapi/ContractSamples.h"
+#include "twsapi/EClientSocket.h"
+#include "twsapi/Execution.h"
+#include "twsapi/Order.h"
+#include "twsapi/OrderState.h"
 #include <chrono>
 #include <iostream>
 #include <spdlog/spdlog.h>
@@ -18,28 +16,19 @@
 using namespace std;
 using namespace ClientSpace;
 
-ClientBrain::ClientBrain()
-    : Account( make_shared<ClientAccount>( 0, p_Client, p_State ) ),
-      Data( make_shared<ClientData>( p_Client, p_State ) ),
-      Broker( make_shared<ClientBroker>( p_Client, p_State, p_OrderId ) )
+ClientBrain::ClientBrain() : Data( make_shared<TradeBase::ClientData>( p_Client, p_State ) ),
 {
-    Strategy = make_shared<BTStrategy>();
+    Strategy = make_shared<TradeBase::BTStrategy>();
     reqId = 10000;
 }
 
-ClientBrain::ClientBrain( shared_ptr<BTStrategy> newStrategy )
-    : Account( make_shared<ClientAccount>( 0, p_Client, p_State ) ),
-      Data( make_shared<ClientData>( p_Client, p_State ) ),
-      Broker( make_shared<ClientBroker>( p_Client, p_State, p_OrderId ) )
+ClientBrain::ClientBrain( shared_ptr<TradeBase::BTStrategy> newStrategy ) : Data( make_shared<TradeBase::ClientData>( p_Client, p_State ) )
 {
     Strategy = move( newStrategy );
     reqId = 10000;
 }
 
-ClientBrain::ClientBrain( shared_ptr<ClientData>        newData,
-                          const shared_ptr<BTStrategy>& newStrategy )
-    : Account( make_shared<ClientAccount>( 0, p_Client, p_State ) ),
-      Broker( make_shared<ClientBroker>( p_Client, p_State, p_OrderId ) )
+ClientBrain::ClientBrain( shared_ptr<TradeBase::ClientData> newData, const shared_ptr<TradeBase::BTStrategy>& newStrategy )
 {
     Strategy = newStrategy;
     reqId = 10000;
@@ -48,21 +37,10 @@ ClientBrain::ClientBrain( shared_ptr<ClientData>        newData,
     Data->addState( p_State );
 }
 
-ClientBrain::ClientBrain( const shared_ptr<ClientAccount>& newAccount,
-                          const shared_ptr<ClientData>&    newData,
-                          const shared_ptr<BTStrategy>&    newStrategy )
-    : Broker( make_shared<ClientBroker>( p_Client, p_State, p_OrderId ) )
+long ClientBrain::getNextReqId()
 {
-    Account = newAccount;
-    Account->addClient( p_Client );
-    Account->addState( p_State );
-    Data = newData;
-    Data->addClient( p_Client );
-    Data->addState( p_State );
-    Strategy = newStrategy;
+    return reqId++;
 }
-
-long ClientBrain::getNextReqId() { return reqId++; }
 
 void ClientBrain::setConnectOptions( const std::string& connectOptions )
 {
@@ -80,14 +58,11 @@ bool ClientBrain::connect( const char* host, int port, int clientId )
     clientID = clientId;
     *p_State = CONNECT;
     string hostName = !( ( host != nullptr ) && ( *host ) != 0 ) ? "127.0.0.1" : host;
-    spdlog::info( "Connecting to " + hostName + ": " + to_string( port ) +
-                  " clientID: " + to_string( clientId ) );
+    spdlog::info( "Connecting to " + hostName + ": " + to_string( port ) + " clientID: " + to_string( clientId ) );
     bool bRes = p_Client->eConnect( host, port, clientId, *p_ExtraAuth );
     if( bRes )
     {
-        spdlog::info( "Connected to " + p_Client->host() + ": " +
-                      to_string( p_Client->port() ) +
-                      " clientID: " + to_string( clientId ) );
+        spdlog::info( "Connected to " + p_Client->host() + ": " + to_string( p_Client->port() ) + " clientID: " + to_string( clientId ) );
         p_Reader = make_shared<EReader>( p_Client.get(), &m_osSignal );
         p_Reader->start();
         *p_State = CONNECTSUCCESS;
@@ -95,9 +70,7 @@ bool ClientBrain::connect( const char* host, int port, int clientId )
     else
     {
         *p_State = CONNECTFAIL;
-        spdlog::error( "Cannot connect to " + p_Client->host() + ": " +
-                       to_string( p_Client->port() ) +
-                       " clientID: " + to_string( clientId ) );
+        spdlog::error( "Cannot connect to " + p_Client->host() + ": " + to_string( p_Client->port() ) + " clientID: " + to_string( clientId ) );
     }
     // if this isn't here the client will immediately disconnect
     this_thread::sleep_for( chrono::milliseconds( 10 ) );
@@ -111,7 +84,10 @@ void ClientBrain::disconnect() const
     spdlog::info( "Disconnected" );
 }
 
-bool ClientBrain::isConnected() const { return p_Client->isConnected(); }
+bool ClientBrain::isConnected() const
+{
+    return p_Client->isConnected();
+}
 
 void ClientBrain::connectionClosed()
 {
@@ -129,8 +105,7 @@ void ClientBrain::connectAck()
 
 void ClientBrain::reqHeadTimestamp()
 {
-    p_Client->reqHeadTimestamp( 14001, ContractSamples::EurGbpFx(), "MIDPOINT", 1,
-                                1 );
+    p_Client->reqHeadTimestamp( 14001, ContractSamples::EurGbpFx(), "MIDPOINT", 1, 1 );
     std::this_thread::sleep_for( std::chrono::seconds( 1 ) );
     p_Client->cancelHeadTimestamp( 14001 );
 
@@ -139,8 +114,7 @@ void ClientBrain::reqHeadTimestamp()
 
 void ClientBrain::headTimestamp( int reqId, const std::string& headTimestamp )
 {
-    spdlog::info( "Head time stamp. ReqId: " + to_string( reqId ) +
-                  " - Head time stamp: " + headTimestamp );
+    spdlog::info( "Head time stamp. ReqId: " + to_string( reqId ) + " - Head time stamp: " + headTimestamp );
 }
 
 void ClientBrain::reqCurrentTime()
@@ -177,8 +151,7 @@ void ClientBrain::managedAccounts( const std::string& accountsList )
 
 void ClientBrain::error( int id, int errorCode, const std::string& errorString )
 {
-    spdlog::error( "Error: ID " + to_string( id ) + " Code " + to_string( errorCode ) +
-                   " MSG " + errorString );
+    spdlog::error( "Error: ID " + to_string( id ) + " Code " + to_string( errorCode ) + " MSG " + errorString );
     if( inter )
     {
         disconnect();
@@ -215,29 +188,39 @@ void ClientBrain::winError( const std::string& str, int lastError )
     spdlog::error( "Error: Message " + str + " Code " + to_string( lastError ) );
 }
 
+/**
+ * Account functions
+ */
+void ClientAccount::initAccount()
+{
+    p_Client->reqAccountSummary( accReqId, "All", AccountSummaryTags::getAllTags() );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+    p_Client->reqAccountUpdates( true, accountID );
+    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+}
+
+void ClientAccount::closeSubscriptions()
+{
+    *p_State = ACCOUNTCLOSE;
+    p_Client->cancelAccountSummary( accReqId );
+    p_Client->reqAccountUpdates( false, accountID );
+    *p_State = ACCOUNTCLOSESUCCESS;
+}
+
 /** Callbacks for account
  *
  */
-void ClientBrain::accountSummary( int reqId, const std::string& account,
-                                  const std::string& tag,
-                                  const std::string& value,
-                                  const std::string& currency )
+void ClientBrain::accountSummary( int reqId, const std::string& account, const std::string& tag, const std::string& value, const std::string& currency )
 {
     Account->accountID = account;
     Account->cash = stof( value );
     Account->accountCurrency = currency;
-    spdlog::info( "Account information now is: ID " + Account->accountID +
-                  " tag " + tag + " cash $" + to_string( Account->cash ) +
-                  " Currency " + Account->accountCurrency );
+    spdlog::info( "Account information now is: ID " + Account->accountID + " tag " + tag + " cash $" + to_string( Account->cash ) + " Currency " + Account->accountCurrency );
 }
 
-void ClientBrain::updateAccountValue( const std::string& key,
-                                      const std::string& val,
-                                      const std::string& currency,
-                                      const std::string& accountName )
+void ClientBrain::updateAccountValue( const std::string& key, const std::string& val, const std::string& currency, const std::string& accountName )
 {
-    // spdlog::info( " Account Value Update: Key: " + key + ", Value: " + val + ",
-    // Currency: " + currency + ", Account: " + accountName );
+    // spdlog::info( " Account Value Update: Key: " + key + ", Value: " + val + ", Currency: " + currency + ", Account: " + accountName );
     if( key == "CashBalance" )
     {
         Account->cash = atof( val.data() );
@@ -252,17 +235,12 @@ void ClientBrain::updateAccountValue( const std::string& key,
     }
 }
 
-void ClientBrain::updatePortfolio( const Contract& contract, double position,
-                                   double marketPrice, double marketValue,
-                                   double averageCost, double unrealizedPNL,
-                                   double             realizedPNL,
-                                   const std::string& accountName )
+void ClientBrain::updatePortfolio( const Contract& contract, double position, double marketPrice, double marketValue, double averageCost, double unrealizedPNL, double realizedPNL, const std::string& accountName )
 {
     // if we're initializing the bot
     if( *p_State == INIT )
     {
-        // initialize pre-existing positions from the incoming info, including
-        // synthetic order and execution objects
+        // initialize pre-existing positions from the incoming info, including synthetic order and execution objects
         auto order = Order();
         order.account = Account->accountID;
         order.action = position > 0 ? "BUY" : "SELL";
@@ -279,9 +257,7 @@ void ClientBrain::updatePortfolio( const Contract& contract, double position,
         exec.time = TimeStamp().toString();
         auto pos = Position( contract, order, exec );
         Account->update( pos );
-        spdlog::info( "Updating portfolio: " + contract.symbol +
-                      ", size: " + to_string( position ) + ", price per share: $" +
-                      to_string( averageCost ) );
+        spdlog::info( "Updating portfolio: " + contract.symbol + ", size: " + to_string( position ) + ", price per share: $" + to_string( averageCost ) );
     }
 }
 
@@ -296,8 +272,7 @@ void ClientBrain::accountDownloadEnd( const std::string& accountName )
     Account->valid = true;
 }
 
-void ClientBrain::position( const std::string& account, const Contract& contract,
-                            double position, double avgCost )
+void ClientBrain::position( const std::string& account, const Contract& contract, double position, double avgCost )
 {
     // Compare the positions coming in to the positions in the account
     auto search = Account->positions.find( contract.conId );
@@ -306,23 +281,19 @@ void ClientBrain::position( const std::string& account, const Contract& contract
         const auto* pos = *( search );
         if( pos->getAvgPrice() != avgCost )
         {
-            spdlog::error( "Position with symbol " + pos->getContract()->symbol +
-                           " secType " + pos->getContract()->secType +
-                           " had an inaccuracte average cost!" );
+            spdlog::error( "Position with symbol " + pos->getContract()->symbol + " secType " + pos->getContract()->secType + " had an inaccuracte average cost!" );
         }
         if( pos->getPositionSize() != position )
         {
-            spdlog::error( "Position with symbol " + pos->getContract()->symbol +
-                           " secType " + pos->getContract()->secType +
-                           " had an inaccuracte position size!" );
+            spdlog::error( "Position with symbol " + pos->getContract()->symbol + " secType " + pos->getContract()->secType + " had an inaccuracte position size!" );
         }
     }
 }
 
-void ClientBrain::positionEnd() { spdlog::info( "End of positiion update" ); }
+void ClientBrain::positionEnd() { spdlog::info( "End of position update" ); }
 
-/** Callbacks for ClientData
- *
+/** 
+ * Callbacks for ClientData
  */
 void ClientBrain::tickPrice( TickerId tickerId, TickType field, double price,
                              const TickAttrib& attribs )
@@ -501,12 +472,33 @@ void ClientBrain::historicalDataUpdate( TickerId reqId, const Bar& bar )
     Data->updateCandle( reqId, bar );
 }
 
-/* ClientBroker Callbacks */
-void ClientBrain::orderStatus( OrderId orderId, const std::string& status,
-                               double filled, double remaining,
-                               double avgFillPrice, int permId, int parentId,
-                               double lastFillPrice, int clientId,
-                               const std::string& whyHeld, double mktCapPrice )
+/** 
+ * Broker functions
+ */
+void ClientBroker::placeOrder( pair<Contract, Order>& p )
+{
+    auto contract = p.first;
+    auto order = p.second;
+    spdlog::info( "Placing order for symbol " + contract.symbol + ", SecType " +
+                  contract.secType + " with order ID " + to_string( *p_OrderId ) );
+    auto newOrderId = *p_OrderId;
+    orderMap[newOrderId] = p;
+    ( *p_OrderId )++;
+    order.orderId = newOrderId;
+    openOrders.insert( p );
+
+    p_Client->placeOrder( newOrderId, contract, order );
+}
+
+void ClientBroker::filledOrder( long reqId, const ExecutionFilter& filter )
+{
+    p_Client->reqExecutions( reqId, filter );
+}
+
+/*
+ * Callbacks
+ */
+void ClientBrain::orderStatus( OrderId orderId, const std::string& status, double filled, double remaining, double avgFillPrice, int permId, int parentId, double lastFillPrice, int clientId, const std::string& whyHeld, double mktCapPrice )
 {
     spdlog::warn( "In orderStatus. The status message is " + status );
     if( status == "ApiPending" )

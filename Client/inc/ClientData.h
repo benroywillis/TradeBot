@@ -6,24 +6,23 @@ class DataArray;
 
 struct SnapHold
 {
-    SnapStruct bidAsk;
-    SnapStruct lastTrade;
+    TradeBase::SnapStruct bidAsk;
+    TradeBase::SnapStruct lastTrade;
 };
 
 struct OptionHold
 {
-    OptionStruct bidAsk;
-    OptionStruct lastTrade;
+    TradeBase::OptionStruct bidAsk;
+    TradeBase::OptionStruct lastTrade;
 };
 
-class ClientData : public ClientSpace::Client, public BTData
+class ClientData : public ClientSpace::Client, public TradeBase::BTData
 {
     friend class ClientBrain;
 
 public:
-    ClientData( std::vector<BTIndicator*>& );
-    ClientData( const std::shared_ptr<EClientSocket>&, const std::shared_ptr<ClientSpace::State>& );
     ClientData();
+    ClientData( const std::shared_ptr<EClientSocket>&, const std::shared_ptr<ClientSpace::State>& );
     void addClient( std::shared_ptr<EClientSocket> );
     void addState( std::shared_ptr<ClientSpace::State> );
     void init();
@@ -31,11 +30,11 @@ public:
     void startTimer();
     bool checkTimer();
     void updateCandle( TickerId, const Bar& );
-    void updatePrice( TickerId, SnapStruct&, double, int );
-    void updateSize( TickerId, SnapStruct&, int, int );
-    void updatePrice( TickerId, OptionStruct&, double, int );
-    void updateSize( TickerId, OptionStruct&, int, int );
-    void updateOptionGreeks( TickerId, OptionStruct&, double, double, double, double, double, double, double, int );
+    void updatePrice( TickerId, TradeBase::SnapStruct&, double, int );
+    void updateSize( TickerId, TradeBase::SnapStruct&, int, int );
+    void updatePrice( TickerId, TradeBase::OptionStruct&, double, int );
+    void updateSize( TickerId, TradeBase::OptionStruct&, int, int );
+    void updateOptionGreeks( TickerId, TradeBase::OptionStruct&, double, double, double, double, double, double, double, int );
     bool updated();
     bool updated() const;
 
@@ -44,9 +43,9 @@ private:
     void startLiveData();
     void newHistRequest( Contract&, long, const std::string&, const std::string&, const std::string& );
     void newLiveRequest( Contract&, long );
-    void addPoint( long, SnapStruct );
-    void addPoint( long, OptionStruct );
-    void updateTimeLine( const std::shared_ptr<DataArray>& vec );
+    void addPoint( long, TradeBase::SnapStruct );
+    void addPoint( long, TradeBase::OptionStruct );
+    void updateTimeLine( const std::shared_ptr<TradeBase::DataArray>& vec );
 
     /// Keeps the starting point of the timer
     std::chrono::_V2::system_clock::time_point start;

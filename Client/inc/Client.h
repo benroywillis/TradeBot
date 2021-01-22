@@ -6,10 +6,10 @@
 #ifndef TWS_API_SAMPLES_TESTCPPCLIENT_TESTCPPCLIENT_H
 #define TWS_API_SAMPLES_TESTCPPCLIENT_TESTCPPCLIENT_H
 
-#include "EReader.h"
-#include "EReaderOSSignal.h"
-#include "EWrapper.h"
-#include "Position.h"
+#include "TradeBase/Position.h"
+#include "twsapi/EReader.h"
+#include "twsapi/EReaderOSSignal.h"
+#include "twsapi/EWrapper.h"
 #include <memory>
 #include <set>
 #include <vector>
@@ -18,7 +18,6 @@ class EClientSocket;
 
 namespace ClientSpace
 {
-
     /// @brief Enumerates all states the Client can be in
     ///
     /// The contributions from the IB API are merely for reference at this point.
@@ -222,7 +221,7 @@ namespace ClientSpace
         void reqCurrentTime();
 
     public:
-#include "EWrapper_prototypes.h"
+#include "twsapi/EWrapper_prototypes.h"
 
     private:
         void printContractMsg( const Contract& contract );

@@ -1,10 +1,8 @@
 #pragma once
-#include "Brain.h"
 #include "Client.h"
+#include "TradeBase/Brain.h"
 
-class ClientAccount;
 class ClientData;
-class ClientBroker;
 
 /// Global flag indicating a keyboard interrupt
 extern bool inter;
@@ -32,12 +30,8 @@ class ClientBrain : public ClientSpace::Client
 {
 public:
     ClientBrain();
-    ClientBrain( std::shared_ptr<BTStrategy> );
-    ClientBrain( std::shared_ptr<ClientData>        newData,
-                 const std::shared_ptr<BTStrategy>& newStrategy );
-    ClientBrain( const std::shared_ptr<ClientAccount>&,
-                 const std::shared_ptr<ClientData>&,
-                 const std::shared_ptr<BTStrategy>& );
+    ClientBrain( std::shared_ptr<TradeBase::BTStrategy> );
+    ClientBrain( std::shared_ptr<ClientData> newData, const std::shared_ptr<TradeBase::BTStrategy>& newStrategy );
     ~ClientBrain() = default;
 
     void setConnectOptions( const std::string& );
@@ -49,16 +43,14 @@ public:
     void init();
 
 private:
-    std::shared_ptr<ClientAccount> Account;
-    std::shared_ptr<ClientData>    Data;
-    std::shared_ptr<ClientBroker>  Broker;
-    std::shared_ptr<BTStrategy>    Strategy;
-    void                           connectionClosed();
-    void                           connectAck();
-    void                           reqHeadTimestamp();
-    long                           getNextReqId();
-    long                           reqId;
-    long                           clientID;
+    std::shared_ptr<ClientData>            Data;
+    std::shared_ptr<TradeBase::BTStrategy> Strategy;
+    void                                   connectionClosed();
+    void                                   connectAck();
+    void                                   reqHeadTimestamp();
+    long                                   getNextReqId();
+    long                                   reqId;
+    long                                   clientID;
     /// Callback to reqHeadTimestamp
     void headTimestamp( int, const std::string& );
     void reqCurrentTime();
@@ -79,8 +71,7 @@ private:
 
     /* Callbacks for ClientAccount */
     /// Callback for reqAccountSummary for all account related information
-    void accountSummary( int, const std::string&, const std::string&,
-                         const std::string&, const std::string& );
+    void accountSummary( int, const std::string&, const std::string&, const std::string&, const std::string& );
     /// @brief Called whenever a position or account value changes, or every 3
     /// minutes.
     ///
@@ -88,16 +79,14 @@ private:
     /// reqAccountUpdates subscription is received. These account updates occur
     /// either when a position or account value is updated, or at most every 3
     /// minutes.
-    void updateAccountValue( const std::string&, const std::string&,
-                             const std::string&, const std::string& );
+    void updateAccountValue( const std::string&, const std::string&, const std::string&, const std::string& );
     /// @brief Called whenever a position in the subscribed account changes.
     ///
     /// This callback is triggered every time an account update from the
     /// reqAccountUpdates subscription is received. These account updates occur
     /// either when a position or account value is updated, or at most every 3
     /// minutes.
-    void updatePortfolio( const Contract&, double, double, double, double, double,
-                          double, const std::string& );
+    void updatePortfolio( const Contract&, double, double, double, double, double, double, const std::string& );
     /// @brief One of three callbacks from account updates. Receives the timestamp
     /// of the last account update.
     ///
@@ -115,8 +104,7 @@ private:
     /* Callbacks for ClientData */
     void tickPrice( TickerId, TickType, double, const TickAttrib& );
     void tickSize( TickerId, TickType, int );
-    void tickOptionComputation( TickerId, TickType, double, double, double, double,
-                                double, double, double, double );
+    void tickOptionComputation( TickerId, TickType, double, double, double, double, double, double, double, double );
     void tickGeneric( TickerId, TickType, double );
     void tickString( TickerId, TickType, const std::string& );
     void tickSnapshotEnd( int );
@@ -131,16 +119,14 @@ private:
     void historicalData( TickerId, const Bar& );
     void historicalDataEnd( int, const std::string&, const std::string& );
     void historicalTicks( int, const std::vector<HistoricalTick>&, bool );
-    void historicalTicksBidAsk( int, const std::vector<HistoricalTickBidAsk>&,
-                                bool );
+    void historicalTicksBidAsk( int, const std::vector<HistoricalTickBidAsk>&, bool );
     void historicalTicksLast( int, const std::vector<HistoricalTickLast>&, bool );
     void historicalDataUpdate( TickerId, const Bar& );
 
     /* Callbacks for ClientBroker */
     /// Gives up-to-date information about each order every time its state
     /// changes. Callback from EClientSocket::placeOrder
-    void orderStatus( OrderId, const std::string&, double, double, double, int,
-                      int, double, int, const std::string&, double );
+    void orderStatus( OrderId, const std::string&, double, double, double, int, int, double, int, const std::string&, double );
     /// Receives all open orders' information. Callback from
     /// EClientSocket::reqAllOpenOrders. Does not create a subscription to open
     /// order updates

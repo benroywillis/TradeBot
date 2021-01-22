@@ -1,10 +1,7 @@
 #include "ClientData.h"
-#include "DataArray.h"
-#include "EClientSocket.h"
-#include "Indicator.h"
-#include "SMA.h"
-#include "TimeStamp.h"
-#include "bar.h"
+#include "TradeBase/TimeStamp.h"
+#include "twsapi/EClientSocket.h"
+#include "twsapi/bar.h"
 #include <chrono>
 #include <iostream>
 #include <spdlog/spdlog.h>
@@ -17,33 +14,21 @@ using namespace ClientSpace;
 
 ClientData::ClientData()
 {
-    indicators = vector<BTIndicator*>();
     openHistRequests = set<long>();
     openDataLines = set<long>();
     updatedLines = set<long>();
-    TimeLine = TimeMap();
-    valid = false;
-}
-
-ClientData::ClientData( vector<BTIndicator*>& newIndicators )
-{
-    indicators = newIndicators;
-    openHistRequests = set<long>();
-    openDataLines = set<long>();
-    updatedLines = set<long>();
-    TimeLine = TimeMap();
+    TimeLine = TradeBase::TimeMap();
     valid = false;
 }
 
 ClientData::ClientData( const shared_ptr<EClientSocket>& newClient, const shared_ptr<State>& newState )
 {
-    indicators = vector<BTIndicator*>();
     p_Client = newClient;
     p_State = newState;
     openHistRequests = set<long>();
     openDataLines = set<long>();
     updatedLines = set<long>();
-    TimeLine = TimeMap();
+    TimeLine = TradeBase::TimeMap();
     valid = false;
 }
 
@@ -160,8 +145,7 @@ void ClientData::harvest( int index )
 
 void ClientData::newLiveRequest( Contract& con, long vecId )
 {
-    auto newVec = make_shared<DataArray>( vecId, con.conId, con.symbol, con.secId,
-                                          con.secType, con.exchange, con.currency );
+    auto newVec = make_shared<TradeBase::DataArray>( vecId, con.conId, con.symbol, con.secId, con.secType, con.exchange, con.currency );
     openDataLines.insert( vecId );
     if( con.secType == "STK" )
     {
@@ -173,12 +157,8 @@ void ClientData::newLiveRequest( Contract& con, long vecId )
             con.lastTradeDateOrContractMonth;
         newVec->contract.strike = con.strike;
         newVec->contract.right = con.right;
-        newVec->exprDate = TimeStamp( con.lastTradeDateOrContractMonth, true );
+        newVec->exprDate = TradeBase::TimeStamp( con.lastTradeDateOrContractMonth, true );
         optionMap[vecId] = OptionHold();
-    }
-    for( const auto& ind : indicators )
-    {
-        newVec->addIndicator( ind );
     }
     DataArrays.insert( newVec );
     p_Client->reqMktData( vecId, con, "", false, false, TagValueListSPtr() );
@@ -186,7 +166,7 @@ void ClientData::newLiveRequest( Contract& con, long vecId )
 
 void ClientData::newHistRequest( Contract& con, long vecId, const string& length, const string& barlength, const string& type )
 {
-    auto   newVec = make_shared<DataArray>( vecId, con.conId, con.symbol, con.secId, con.secType, con.exchange, con.currency );
+    auto   newVec = make_shared<TradeBase::DataArray>( vecId, con.conId, con.symbol, con.secId, con.secType, con.exchange, con.currency );
     string inter = barlength;
     inter.erase( remove_if( inter.begin(), inter.end(), []( unsigned char c ) { return std::isspace( c ); } ), inter.end() );
     newVec->interval = inter;
@@ -213,8 +193,8 @@ void ClientData::updateCandle( TickerId reqId, const Bar& bar )
     auto point = DataArrays.find( reqId );
     if( point != DataArrays.end() )
     {
-        CandleStruct newPoint;
-        newPoint.time = TimeStamp( bar.time );
+        TradeBase::CandleStruct newPoint;
+        newPoint.time = TradeBase::TimeStamp( bar.time );
         newPoint.open = bar.open;
         newPoint.high = bar.high;
         newPoint.low = bar.low;
@@ -228,7 +208,7 @@ void ClientData::updateCandle( TickerId reqId, const Bar& bar )
     }
 }
 
-void ClientData::updatePrice( TickerId reqId, SnapStruct& newPoint, double price, int field )
+void ClientData::updatePrice( TickerId reqId, TradeBase::SnapStruct& newPoint, double price, int field )
 {
     if( field == 1 )
     {
@@ -260,7 +240,7 @@ void ClientData::updatePrice( TickerId reqId, SnapStruct& newPoint, double price
     }
 }
 
-void ClientData::updatePrice( TickerId reqId, OptionStruct& newPoint, double price, int field )
+void ClientData::updatePrice( TickerId reqId, TradeBase::OptionStruct& newPoint, double price, int field )
 {
     if( field == 1 )
     {
@@ -292,7 +272,7 @@ void ClientData::updatePrice( TickerId reqId, OptionStruct& newPoint, double pri
     }
 }
 
-void ClientData::updateSize( TickerId reqId, SnapStruct& newPoint, int value, int field )
+void ClientData::updateSize( TickerId reqId, TradeBase::SnapStruct& newPoint, int value, int field )
 {
     if( field == 0 )
     {
@@ -314,7 +294,7 @@ void ClientData::updateSize( TickerId reqId, SnapStruct& newPoint, int value, in
     }
 }
 
-void ClientData::updateSize( TickerId reqId, OptionStruct& newPoint, int value, int field )
+void ClientData::updateSize( TickerId reqId, TradeBase::OptionStruct& newPoint, int value, int field )
 {
     if( field == 0 )
     {
@@ -346,7 +326,7 @@ void ClientData::updateSize( TickerId reqId, OptionStruct& newPoint, int value, 
     }
 }
 
-void ClientData::updateOptionGreeks( TickerId reqId, OptionStruct& newPoint, double impliedVol, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, int field )
+void ClientData::updateOptionGreeks( TickerId reqId, TradeBase::OptionStruct& newPoint, double impliedVol, double delta, double optPrice, double pvDividend, double gamma, double vega, double theta, int field )
 {
     // sometimes (especially at the beginning) the data can be crap, so make sure
     // the values are sane
@@ -401,7 +381,7 @@ void ClientData::updateOptionGreeks( TickerId reqId, OptionStruct& newPoint, dou
     }
 }
 
-void ClientData::addPoint( long reqId, SnapStruct newPoint )
+void ClientData::addPoint( long reqId, TradeBase::SnapStruct newPoint )
 {
     // spdlog::info( "New snap struct " + newPoint.toString() );
     auto point = DataArrays.find( reqId );
@@ -418,7 +398,7 @@ void ClientData::addPoint( long reqId, SnapStruct newPoint )
     newPoint.clear();
 }
 
-void ClientData::addPoint( long reqId, OptionStruct newPoint )
+void ClientData::addPoint( long reqId, TradeBase::OptionStruct newPoint )
 {
     // spdlog::info( "New option struct " + newPoint.toString() );
     auto point = DataArrays.find( reqId );
@@ -435,7 +415,7 @@ void ClientData::addPoint( long reqId, OptionStruct newPoint )
     newPoint.clear();
 }
 
-void ClientData::updateTimeLine( const shared_ptr<DataArray>& vec )
+void ClientData::updateTimeLine( const shared_ptr<TradeBase::DataArray>& vec )
 {
     auto last = vec->getLastPoint();
     if( last )
@@ -443,7 +423,7 @@ void ClientData::updateTimeLine( const shared_ptr<DataArray>& vec )
         auto it = *last;
         if( TimeLine.find( it->getTime() ) == TimeLine.end() )
         {
-            TimeLine[it->getTime()] = GlobalTimePoint( vec, it );
+            TimeLine[it->getTime()] = TradeBase::GlobalTimePoint( vec, it );
             BTData::currentTime = prev( TimeLine.end() );
         }
         else

@@ -2,21 +2,13 @@
  * subject to the terms and conditions of the IB API Non-Commercial License or
  * the IB API Commercial License, as applicable. */
 
-#include "StdAfx.h"
-
-#include "Account.h"
-#include "Broker.h"
-#include "ClientAccount.h"
 #include "ClientBrain.h"
-#include "ClientBroker.h"
 #include "ClientData.h"
-#include "Data.h"
-#include "DataStruct.h"
-#include "DataTypes.h"
-#include "Execution.h"
-#include "HalvedPositionSMA.h"
-#include "Order.h"
-#include "SMA.h"
+#include "TradeBase/Execution.h"
+#include "TradeBase/Order.h"
+#include "TradeBrain/HalvedPositionSMA.h"
+#include "TradeBrain/SMA.h"
+#include "twsapi/StdAfx.h"
 #include <chrono>
 #include <csignal>
 #include <cstdlib>

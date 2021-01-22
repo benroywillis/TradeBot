@@ -101,9 +101,8 @@ void ClientBrain::processMessages()
     switch( *p_State )
     {
         case CONNECT:
-            // something is wrong, should never be in this state when processing
-            // messages
-            spdlog::critical( "Client is in Connect state when processing messages. Exiting..." );
+            // something is wrong, should never be in this state when processing messages
+            spdlog::critical( "Client is in CONNECT state when processing messages. Exiting..." );
             disconnect();
             exit( CONNECT );
 

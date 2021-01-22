@@ -2,7 +2,7 @@
  * subject to the terms and conditions of the IB API Non-Commercial License or
  * the IB API Commercial License, as applicable. */
 
-#include "twsapi/Client.h"
+#include "Client.h"
 #include "twsapi/AccountSummaryTags.h"
 #include "twsapi/AvailableAlgoParams.h"
 #include "twsapi/CommissionReport.h"
