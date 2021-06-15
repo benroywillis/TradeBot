@@ -18,6 +18,8 @@ endif()
 # fixes "incomplete type" bug on strings when in debug mode
 if(${CMAKE_BUILD_TYPE} STREQUAL "Debug")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -D_GLIBCXX_DEBUG")
+    set(CMAKE_DEBUG_POSTFIX d)
+    set(CMAKE_TARGETS)
     message(STATUS "Setting libCXX debug flag")
 endif()
 
