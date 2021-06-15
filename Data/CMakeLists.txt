@@ -6,4 +6,4 @@ set_target_properties(DataHarvester
 
 target_compile_options(DataHarvester PRIVATE -Wno-switch -Wno-format)
 target_include_directories(DataHarvester PRIVATE ${CLIENT_INCLUDE_DIRS} ${TWSAPI_INCLUDE_DIRS})
-target_link_libraries(DataHarvester PRIVATE ${TWSAPI_LIBRARIES} "-lpthread" client spdlog::spdlog spdlog::spdlog_header_only)
+target_link_libraries(DataHarvester PRIVATE ${TWSAPI_LIBRARIES} twsapid ${TRADEBASE_LIBRARIES} client spdlog::spdlog spdlog::spdlog_header_only)
