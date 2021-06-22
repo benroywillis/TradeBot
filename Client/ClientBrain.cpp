@@ -15,6 +15,13 @@
 
 using namespace std;
 
+// General wait time between operations, in milliseconds
+constexpr unsigned int WAIT_TIME = 100;
+// Wait time between data feed request operations, in milliseconds
+constexpr unsigned int INIT_WAIT_TIME = 1000;
+// Wait time between historical data requests, in milliseconds
+constexpr unsigned int REQ_WAIT_TIME = 200;
+
 ClientBrain::ClientBrain() : m_osSignal( 2000 ), p_Client( make_shared<EClientSocket>( this, &m_osSignal ) ), p_State( make_shared<State>( State::CONNECT ) ), m_sleepDeadline( 0 ), p_OrderId( make_shared<OrderId>( 0 ) ), p_Reader( nullptr ), p_ExtraAuth( make_shared<bool>( false ) )
 {
     Strategy = make_shared<TradeBase::BTStrategy>();
@@ -86,7 +93,7 @@ bool ClientBrain::connect( const char* host, int port, int clientId )
         spdlog::error( "Cannot connect to " + p_Client->host() + ": " + to_string( p_Client->port() ) + " clientID: " + to_string( clientId ) );
     }
     // if this isn't here the client will immediately disconnect
-    this_thread::sleep_for( chrono::milliseconds( 10 ) );
+    this_thread::sleep_for( chrono::milliseconds( WAIT_TIME ) );
     return bRes;
 }
 
@@ -209,9 +216,9 @@ void ClientBrain::winError( const std::string& str, int lastError )
 void ClientBrain::accountInit()
 {
     p_Client->reqAccountSummary( accReqId, "All", AllAccountTags );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( WAIT_TIME ) );
     p_Client->reqAccountUpdates( true, accountID );
-    std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
+    std::this_thread::sleep_for( std::chrono::milliseconds( WAIT_TIME ) );
 }
 
 void ClientBrain::closeSubscriptions()
@@ -355,15 +362,21 @@ void ClientBrain::dataInit()
 void ClientBrain::startLiveData()
 {
     // market data lines
-    for( auto& con : stockContracts )
+    /*for( auto& con : stockContracts )
     {
         newLiveRequest( con, getNextVectorId() );
-        this_thread::sleep_for( chrono::milliseconds( 500 ) );
-    }
-    for( auto& con : optionContracts )
+        this_thread::sleep_for( chrono::milliseconds( INIT_WAIT_TIME ) );
+    }*/
+    // for some reason this causes the connection in the optimized version to break but not the debug version
+    /*for( auto& con : optionContracts )
     {
         newLiveRequest( con, getNextVectorId() );
-        this_thread::sleep_for( chrono::milliseconds( 500 ) );
+        this_thread::sleep_for( chrono::milliseconds( INIT_WAIT_TIME ) );
+    }*/
+    for( auto& con : futureContracts )
+    {
+        newLiveRequest( con, getNextVectorId() );
+        this_thread::sleep_for( chrono::milliseconds( INIT_WAIT_TIME ) );        
     }
 }
 
@@ -374,19 +387,19 @@ void ClientBrain::harvest( int index )
     {
         for( auto& con : stockContracts )
         {
-            spdlog::info( "Retrieving historical data of index 0 for " + con.symbol );
+            spdlog::info( "Requesting historical data of index 0 for " + con.symbol );
             newHistRequest( con, getNextVectorId(), "1800 S", "1 secs", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "3600 S", "5 secs", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "14400 S", "10 secs", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "14400 S", "15 secs", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "28800 S", "30 secs", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 D", "1 min", "TRADES" ); // the length of all candles north of 30s have no length restrictions anymore
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
         }
         *p_State = State::DATAHARVEST_TIMEOUT_0;
         startTimer();
@@ -395,19 +408,19 @@ void ClientBrain::harvest( int index )
     {
         for( auto& con : stockContracts )
         {
-            spdlog::info( "Retrieving historical data of index 1 for " + con.symbol );
+            spdlog::info( "Requesting historical data of index 1 for " + con.symbol );
             newHistRequest( con, getNextVectorId(), "2 D", "2 mins", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 W", "3 mins", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 W", "5 mins", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 W", "10 mins", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 W", "15 mins", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 W", "20 mins", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
         }
         *p_State = State::DATAHARVEST_TIMEOUT_1;
         startTimer();
@@ -416,19 +429,19 @@ void ClientBrain::harvest( int index )
     {
         for( auto& con : stockContracts )
         {
-            spdlog::info( "Retrieving historical data of index 2 for " + con.symbol );
+            spdlog::info( "Requesting historical data of index 2 for " + con.symbol );
             newHistRequest( con, getNextVectorId(), "1 M", "30 mins", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 M", "1 hour", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 M", "2 hours", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 M", "3 hours", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 M", "4 hours", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newHistRequest( con, getNextVectorId(), "1 M", "8 hours", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 200 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
         }
         *p_State = State::DATAHARVEST_TIMEOUT_2;
         startTimer();
@@ -437,11 +450,11 @@ void ClientBrain::harvest( int index )
     {
         for( auto& con : stockContracts )
         {
-            spdlog::info( "Retrieving historical data of index 3 for " + con.symbol );
+            spdlog::info( "Requesting historical data of index 3 for " + con.symbol );
             newHistRequest( con, getNextVectorId(), "1 Y", "1 day", "TRADES" );
-            this_thread::sleep_for( chrono::milliseconds( 500 ) );
+            this_thread::sleep_for( chrono::milliseconds( REQ_WAIT_TIME ) );
             newLiveRequest( con, getNextVectorId() );
-            this_thread::sleep_for( chrono::milliseconds( 500 ) );
+            this_thread::sleep_for( chrono::milliseconds( INIT_WAIT_TIME ) );
         }
         *p_State = State::DATAHARVEST_LIVE;
     }
@@ -457,14 +470,20 @@ void ClientBrain::newLiveRequest( Contract& con, long vecId )
     }
     else if( con.secType == "OPT" )
     {
-        newVec->contract.lastTradeDateOrContractMonth =
-            con.lastTradeDateOrContractMonth;
+        newVec->contract.lastTradeDateOrContractMonth = con.lastTradeDateOrContractMonth;
         newVec->contract.strike = con.strike;
         newVec->contract.right = con.right;
         newVec->exprDate = TradeBase::TimeStamp( con.lastTradeDateOrContractMonth, true );
         optionMap[vecId] = OptionHold();
     }
+    else if( con.secType == "FUT" )
+    {
+        newVec->contract.lastTradeDateOrContractMonth = con.lastTradeDateOrContractMonth;
+        newVec->exprDate = TradeBase::TimeStamp( con.lastTradeDateOrContractMonth, true );
+        futureMap[vecId] = FutureHold();
+    }
     DataArrays.insert( newVec );
+    spdlog::info( "Requesting live data stream for " + con.symbol );
     p_Client->reqMktData( vecId, con, "", false, false, TagValueListSPtr() );
 }
 
@@ -722,6 +741,7 @@ void ClientBrain::addPoint( long reqId, TradeBase::OptionStruct newPoint )
 void ClientBrain::updateTimeLine( const shared_ptr<TradeBase::DataArray>& vec )
 {
     auto last = vec->getLastPoint();
+    // TODO: this is not allowed, the last iterator is invalid
     if( last )
     {
         auto it = *last;
@@ -838,7 +858,7 @@ void ClientBrain::initContractVectors()
     OPT0.secType = "OPT";
     OPT0.exchange = "AMEX";
     OPT0.currency = "USD";
-    OPT0.lastTradeDateOrContractMonth = "20200731";
+    OPT0.lastTradeDateOrContractMonth = "20210716";
     OPT0.strike = 3050;
     OPT0.right = "C";
     OPT0.multiplier = "100";
@@ -873,7 +893,7 @@ void ClientBrain::initContractVectors()
     OPT6.secType = "OPT";
     OPT6.exchange = "AMEX";
     OPT6.currency = "USD";
-    OPT6.lastTradeDateOrContractMonth = "20200731";
+    OPT6.lastTradeDateOrContractMonth = "20210716";
     OPT6.strike = 1400;
     OPT6.right = "C";
     OPT6.multiplier = "100";
@@ -900,6 +920,20 @@ void ClientBrain::initContractVectors()
     OPT11.conId = getNextConId();
     OPT11.strike = 1400;
     optionContracts.push_back( OPT11 );
+
+    // Futures
+    Contract FUT0 = Contract();
+    //FUT0.conId = 	428520022;//getNextConId();
+    FUT0.symbol = "MES";
+    FUT0.localSymbol = "MESU1";
+    FUT0.secType = "FUT";
+    FUT0.exchange = "SMART";
+    FUT0.primaryExchange = "GLOBEX";
+    FUT0.currency = "USD";
+    // because we define the local symbol, this is redundant
+    FUT0.lastTradeDateOrContractMonth = "20210917";
+    //FUT0.multiplier = "5";
+    futureContracts.push_back(FUT0);
 }
 
 void ClientBrain::printCSVs()

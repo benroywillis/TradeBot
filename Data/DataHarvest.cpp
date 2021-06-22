@@ -17,6 +17,7 @@ using namespace std;
 constexpr int      SOCKETID = 7497;
 constexpr int      CLIENTID = 112;
 constexpr unsigned MAX_ATTEMPTS = 10;
+/// Program wait time between each connection attempt, in seconds
 constexpr unsigned SLEEP_TIME = 3;
 
 bool inter = false;
@@ -160,25 +161,26 @@ int main( int argc, char** argv )
     signal( SIGINT, sigint );
     unsigned    attempt = 0;
     ClientBrain client = ClientBrain();
-    for( ;; )
+    while( attempt < MAX_ATTEMPTS )
     {
         ++attempt;
-        cout << "Attempt " << attempt << " of " << MAX_ATTEMPTS << endl;
-        client.connect( "", SOCKETID, CLIENTID );
-        while( client.isConnected() )
-        {
-            client.processMessages();
-        }
-        if( attempt >= MAX_ATTEMPTS )
-        {
-            break;
-        }
         if( inter )
         {
             spdlog::critical( "Process interrupted. Exiting..." );
             exit( static_cast<int>( State::INT ) );
         }
+        spdlog::info( "Attempt " + to_string(attempt) + " of " + to_string(MAX_ATTEMPTS) );
+        auto connection = client.connect( "", SOCKETID, CLIENTID );
+        if( !connection )
+        {
+            spdlog::error("Connection attempt failed. Retrying...");
+            continue;
+        }
         std::this_thread::sleep_for( std::chrono::seconds( SLEEP_TIME ) );
+        while( client.isConnected() )
+        {
+            client.processMessages();
+        }
     }
     if( client.isConnected() )
     {

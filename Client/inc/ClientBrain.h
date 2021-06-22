@@ -45,6 +45,12 @@ struct OptionHold
     TradeBase::OptionStruct lastTrade;
 };
 
+struct FutureHold
+{
+    TradeBase::SnapStruct bidAsk;
+    TradeBase::SnapStruct lastTrade;
+};
+
 /// @brief Enumerates all states the Client can be in
 ///
 /// The contributions from the IB API are merely for reference at this point.
@@ -373,13 +379,16 @@ private:
     /// Contains all market data lines that are currently active
     /// Up to 100 (including those on the TWS watchlist) can be open at once.
     std::set<long> openDataLines;
-    /// Intermediate snapshot structures for holding asynchronous data from IB
+    /// Intermediate snapshot structures for holding asynchronous equity data from IB
     std::map<long, SnapHold> snapMap;
-    /// Intermediate snapshot structures for holding asynchronous data from IB
+    /// Intermediate snapshot structures for holding asynchronous option data from IB
     std::map<long, OptionHold> optionMap;
+    /// Intermediate snapshot structures for holding asynchronous future data from IB
+    std::map<long, FutureHold> futureMap;
     /// Structures to hold target contracts in
     std::vector<Contract> stockContracts;
     std::vector<Contract> optionContracts;
+    std::vector<Contract> futureContracts;
 
     struct VectorCompare
     {
