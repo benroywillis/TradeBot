@@ -1,4 +1,5 @@
 #pragma once
+#include "TradeBase/Brain.h"
 #include "TradeBase/DataTypes.h"
 #include "TradeBase/Strategy.h"
 #include "twsapi/EReader.h"
@@ -303,7 +304,7 @@ class ClientBrain : public EWrapper
 {
 public:
     ClientBrain();
-    ClientBrain( std::shared_ptr<TradeBase::BTStrategy> );
+    ClientBrain( std::shared_ptr<TradeBase::TBStrategy> );
     ~ClientBrain() = default;
     void setConnectOptions( const std::string& );
     void processMessages();
@@ -319,7 +320,7 @@ private:
 // Declares virtual methods from EWrapper class
 #include "twsapi/EWrapper_prototypes.h"
 
-    std::shared_ptr<TradeBase::BTStrategy> Strategy;
+    std::shared_ptr<TradeBase::TBStrategy> Strategy;
     EReaderOSSignal                        m_osSignal;
     std::shared_ptr<EClientSocket>         p_Client;
     std::shared_ptr<State>                 p_State;

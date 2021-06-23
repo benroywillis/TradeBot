@@ -169,11 +169,11 @@ int main( int argc, char** argv )
             spdlog::critical( "Process interrupted. Exiting..." );
             exit( static_cast<int>( State::INT ) );
         }
-        spdlog::info( "Attempt " + to_string(attempt) + " of " + to_string(MAX_ATTEMPTS) );
+        spdlog::info( "Attempt " + to_string( attempt ) + " of " + to_string( MAX_ATTEMPTS ) );
         auto connection = client.connect( "", SOCKETID, CLIENTID );
         if( !connection )
         {
-            spdlog::error("Connection attempt failed. Retrying...");
+            spdlog::error( "Connection attempt failed. Retrying..." );
             continue;
         }
         std::this_thread::sleep_for( std::chrono::seconds( SLEEP_TIME ) );
